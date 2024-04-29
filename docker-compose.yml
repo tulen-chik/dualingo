@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - /data/:/data/mongodb/
+    environment:
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_ROOT_USERNAME=mongodb
+    ports:
+      - 27017:27017
+
+  gateway:
+    container_name: duolingo-gateway
+    image: eugene1256/duolingo-gateway:latest
+    build: /server/nginx/
+    volumes:
+      - /data/:/data/gateway-n/
+    environment:
+      - WORDS_APP_URL=http://words:8000/
+      - USERS_APP_URL=http://users:8000/
+    ports:
+      - 8000:80
+    expose:
+      - 8000
+    depends_on:
+      - users
+      - words
+
+  words:
+    container_name: duolingo-words
+    build: /server/words/
+    image: eugene1256/duolingo-words:latest
+    volumes:
+      - /data/:/data/words/
+    environment:
+      - MONGODB_CONNECTION=mongodb://mongodb:root@mongodb
+      - SECRET_KEY=q37cwyn094c987cnwyeuio7
+    ports:
+      - 8001:8000
+    expose:
+      - 8001
+    depends_on:
+      - mongodb
+  
+  users:
+    container_name: duolingo-users
+    build: /server/users/
+    image: eugene1256/duolingo-users:latest
+    volumes:
+      - /data/:/data/users/
+    environment:
+      - MONGODB_CONNECTION=mongodb://mongodb:root@mongodb
+      - SECRET_KEY=q37cwyn094c987cnwyeuio7
+    ports:
+      - 8002:8000
+    expose:
+      - 8002
+    depends_on:
+      - mongodb
+  
+  client:
+    container_name: duolingo-client
+    build: /client/
+    image: eugene1256/duolingo-client:latest
+    volumes:
+      - /data/:/data/client/
+    ports:
+      - 80:3000
+    expose:
+      - 80
+    depends_on:
+      - gateway
+
+volumes:
+  data:
